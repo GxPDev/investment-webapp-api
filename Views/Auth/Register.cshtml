@@ -1,0 +1,14 @@
+<h2>Register</h2>
+
+@if (ViewBag.ErrorMessage is string errorMessage)
+{
+    <p>@errorMessage</p>
+}
+
+<form method="post">
+    <input name="Username" placeholder="Username" />
+    <input name="Email" type="email" placeholder="Email address" />
+    <input name="Password" type="password" placeholder="Password" />
+    <p style="color:#6b7280; font-size: 0.9rem;">Password must be at least 7 characters.</p>
+    <button type="submit">Register</button>
+</form>

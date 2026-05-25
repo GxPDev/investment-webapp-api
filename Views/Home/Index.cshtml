@@ -1,0 +1,66 @@
+﻿@{
+    ViewData["Title"] = "VaultVest";
+}
+
+<div class="fin-home">
+    <section class="fin-hero">
+        <div class="fin-hero-text">
+            <span class="fin-kicker">Institutional-grade investing</span>
+            <h1>Confident investing, built on clarity and disciplined growth.</h1>
+            <p>
+                VaultVest delivers transparent performance insights, curated risk controls,
+                and a portfolio experience designed for long-term financial confidence.
+            </p>
+            <div class="fin-cta">
+                <a class="fin-button primary" href="#" data-bs-toggle="modal" data-bs-target="#registerModal">Open account</a>
+                @if (Context.Session.GetString("user") == null)
+                {
+                    <a class="fin-button ghost" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">Access dashboard</a>
+                }
+                else
+                {
+                    <a class="fin-button ghost" href="/Dashboard/Index">Access dashboard</a>
+                }
+            </div>
+        </div>
+        <div class="fin-hero-panel">
+            <div class="fin-metric">
+                <span>Assets Managed</span>
+                <strong>$8.4B</strong>
+                <p>Across diversified client portfolios.</p>
+            </div>
+            <div class="fin-metric">
+                <span>Portfolio Uptime</span>
+                <strong>99.98%</strong>
+                <p>Continuous monitoring and safeguards.</p>
+            </div>
+            <div class="fin-metric">
+                <span>Risk Transparency</span>
+                <strong>Weekly</strong>
+                <p>Clear reporting on allocations and performance.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="fin-summary">
+        <div>
+            <h2>Focused on outcomes</h2>
+            <p>Professional portfolio management with consistent reporting and measurable results.</p>
+        </div>
+        <div class="fin-summary-grid">
+            <div>
+                <strong>Multi-asset</strong>
+                <span>Balanced exposure across equities, fixed income, and alternatives.</span>
+            </div>
+            <div>
+                <strong>Risk controls</strong>
+                <span>Defined limits with automated monitoring and alerts.</span>
+            </div>
+            <div>
+                <strong>Compliance-ready</strong>
+                <span>Auditable activity logs and clear documentation.</span>
+            </div>
+        </div>
+    </section>
+
+</div>

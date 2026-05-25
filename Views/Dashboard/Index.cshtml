@@ -1,0 +1,868 @@
+@model InvestmentWebApp.Models.DashboardViewModel
+
+@{
+	ViewData["Title"] = "Dashboard";
+	var depositsPage = (int)(ViewBag.DepositsPage ?? 1);
+	var depositsTotalPages = (int)(ViewBag.DepositsTotalPages ?? 1);
+	var depositsPageSize = (int)(ViewBag.DepositsPageSize ?? 10);
+	var withdrawalsPage = (int)(ViewBag.WithdrawalsPage ?? 1);
+	var withdrawalsTotalPages = (int)(ViewBag.WithdrawalsTotalPages ?? 1);
+	var withdrawalsPageSize = (int)(ViewBag.WithdrawalsPageSize ?? 10);
+	var sentTransfersPage = (int)(ViewBag.SentTransfersPage ?? 1);
+	var sentTransfersTotalPages = (int)(ViewBag.SentTransfersTotalPages ?? 1);
+	var sentTransfersPageSize = (int)(ViewBag.SentTransfersPageSize ?? 10);
+	var receivedTransfersPage = (int)(ViewBag.ReceivedTransfersPage ?? 1);
+	var receivedTransfersTotalPages = (int)(ViewBag.ReceivedTransfersTotalPages ?? 1);
+	var receivedTransfersPageSize = (int)(ViewBag.ReceivedTransfersPageSize ?? 10);
+	var transactionsPageSize = (int)(ViewBag.TransactionsPageSize ?? 10);
+}
+
+<div class="fin-dashboard">
+<div class="dashboard">
+	@if (TempData["Error"] != null)
+	{
+		<div class="alert alert-error">
+			@TempData["Error"]
+		</div>
+	}
+	@if (TempData["Success"] != null)
+	{
+		<div class="alert alert-success">
+			@TempData["Success"]
+		</div>
+	}
+
+	<div class="top-bar">
+		<div>
+			<h1>Investment Dashboard</h1>
+			<p class="subtitle">Professional portfolio overview and performance insights.</p>
+		</div>
+		<div class="header-actions">
+			<button type="button" class="toggle" id="transactionsToggle">Show transactions</button>
+		</div>
+	</div>
+
+	<div class="top-cards">
+		<div class="card accent-neutral">
+			<div class="card-header">
+				<span class="card-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" focusable="false">
+						<path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.01-8 4.5V20h16v-1.5c0-2.49-3.58-4.5-8-4.5Z" />
+					</svg>
+				</span>
+				<h2>User</h2>
+			</div>
+			<p>@Model.User.Username</p>
+		</div>
+
+		<div class="card accent-indigo">
+			<div class="card-header">
+				<span class="card-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" focusable="false">
+						<path d="M12 3 4 7v6c0 4.42 3.58 8 8 8s8-3.58 8-8V7Zm0 2.18 6 3v4.82a6 6 0 0 1-12 0V8.18Z" />
+					</svg>
+				</span>
+				<h2>Tier</h2>
+				<span class="tier-badge tier-@Model.User.Tier.ToLower()">@Model.User.Tier</span>
+			</div>
+			<p id="tierValue">@Model.User.Tier</p>
+		</div>
+
+		<div class="card accent-blue">
+			<div class="card-header">
+				<span class="card-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" focusable="false">
+						<path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h10v2H4v-2Z" />
+					</svg>
+				</span>
+				<h2>Balance</h2>
+			</div>
+			<p id="balanceValue">$@Model.User.Balance.ToString("F2")</p>
+		</div>
+
+		<div class="card accent-emerald">
+			<div class="card-header">
+				<span class="card-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" focusable="false">
+						<path d="M4 17h3.5l2.5-7 3 10 2-6H20v-2h-4.5l-2.5 7-3-10-2 6H4Z" />
+					</svg>
+				</span>
+				<h2>Daily Return</h2>
+			</div>
+			<p id="dailyReturnValue">$@Model.DailyReturn.ToString("F2")</p>
+		</div>
+
+		<div class="card accent-amber">
+			<div class="card-header">
+				<span class="card-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" focusable="false">
+						<path d="M6 4h9a4 4 0 0 1 0 8H8v8H6V4Zm2 2v4h7a2 2 0 0 0 0-4Z" />
+					</svg>
+				</span>
+				<h2>Last Profit</h2>
+			</div>
+			<p>@(Model.LastProfitDate == DateTime.MinValue ? "Never" : Model.LastProfitDate.ToShortDateString())</p>
+		</div>
+
+	</div>
+
+	<div class="quick-actions" role="tablist" aria-label="Quick actions">
+		<button type="button" class="qa-button is-active" data-target="panel-deposit" aria-controls="panel-deposit" aria-expanded="true">Deposit Funds</button>
+		<button type="button" class="qa-button" data-target="panel-withdraw" aria-controls="panel-withdraw" aria-expanded="false">Withdraw Funds</button>
+		<button type="button" class="qa-button" data-target="panel-requests" aria-controls="panel-requests" aria-expanded="false">Deposit & Withdrawal</button>
+		<button type="button" class="qa-button" data-target="panel-transfers" aria-controls="panel-transfers" aria-expanded="false">Transfers</button>
+	</div>
+
+	<h2 class="section-title">Automated Actions</h2>
+
+	<div class="tier-card">
+		<div>
+			<h3>Membership Tiers</h3>
+			<p>Thresholds are applied automatically based on balance.</p>
+		</div>
+		<div class="tier-list">
+			<div class="tier-bronze @(Model.User.Tier == "Bronze" ? "tier-active" : string.Empty)">
+				<span>Bronze</span>
+				<strong>$100.00</strong>
+				<small class="tier-note">Minimum balance</small>
+				<small class="tier-return">Daily return: 0.1%</small>
+			</div>
+			<div class="tier-silver @(Model.User.Tier == "Silver" ? "tier-active" : string.Empty)">
+				<span>Silver</span>
+				<strong>$1,000.00</strong>
+				<small class="tier-note">Minimum balance</small>
+				<small class="tier-return">Daily return: 0.3%</small>
+			</div>
+			<div class="tier-gold @(Model.User.Tier == "Gold" ? "tier-active" : string.Empty)">
+				<span>Gold</span>
+				<strong>$10,000.00</strong>
+				<small class="tier-note">Minimum balance</small>
+				<small class="tier-return">Daily return: 0.4%</small>
+			</div>
+			<div class="tier-vip @(Model.User.Tier == "VIP" ? "tier-active" : string.Empty)">
+				<span>VIP</span>
+				<strong>$100,000.00</strong>
+				<small class="tier-note">Minimum balance</small>
+				<small class="tier-return">Daily return: 0.5%</small>
+			</div>
+		</div>
+	</div>
+
+	<div class="action-grid">
+		<div class="invest-box collapse-panel is-open" id="panel-deposit">
+			<h2>Deposit Funds</h2>
+			<form method="post" action="/Dashboard/SubmitDeposit">
+				<input type="number"
+					   name="amount"
+					   placeholder="Enter investment amount"
+					   min="1000"
+					   step="0.01"
+					   id="depositAmount" />
+				<button type="submit">
+					Deposit completed
+				</button>
+			</form>
+			<span class="form-hint">Minimum deposit: $1,000.00</span>
+			<span class="form-hint">Click after sending funds to the address below.</span>
+			<div class="deposit-address" id="depositAddress" data-address="@Model.User.DepositAddress">
+				<span>USDT Deposit Address</span>
+				<strong>@(string.IsNullOrWhiteSpace(Model.User.DepositAddress) ? "Address will appear after valid amount" : Model.User.DepositAddress)</strong>
+				<button type="button" class="copy-button" data-copy="@Model.User.DepositAddress">Copy address</button>
+			</div>
+		</div>
+
+		<div class="invest-box collapse-panel" id="panel-withdraw">
+			<h2>Withdraw Funds</h2>
+			<form method="post" action="/Dashboard/Withdraw">
+				<input type="number"
+					   name="amount"
+					   placeholder="Enter withdrawal amount" />
+				<input type="text"
+					   name="walletAddress"
+					   placeholder="Enter USDT Wallet Address" />
+				<button type="submit">
+					Withdraw
+				</button>
+			</form>
+			<span class="form-hint">Minimum withdrawal: $1,000.00</span>
+		</div>
+	</div>
+
+	<div class="requests-grid">
+		<div class="section-card collapse-panel" id="panel-requests">
+			<div class="section-headline">
+				<h2>Deposit & Withdrawal</h2>
+				<span>Requests and approvals</span>
+			</div>
+			<h3 class="subsection-title">Deposit Requests</h3>
+			<div class="section-page-size">
+				<label for="depositsPageSize">Rows</label>
+				<select id="depositsPageSize" onchange="window.location.href='/Dashboard/Index?depositsPage=1&depositsPageSize=' + this.value + '&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-requests'">
+					<option value="5" selected="@(depositsPageSize == 5)">5</option>
+					<option value="10" selected="@(depositsPageSize == 10)">10</option>
+					<option value="20" selected="@(depositsPageSize == 20)">20</option>
+					<option value="50" selected="@(depositsPageSize == 50)">50</option>
+				</select>
+			</div>
+			@if (!Model.DepositRequests.Any())
+			{
+				<p class="empty-state">No deposit requests yet.</p>
+			}
+			else
+			{
+				<table>
+					<tr>
+						<th>Amount</th>
+						<th>Status</th>
+						<th>Requested</th>
+					</tr>
+					@foreach (var request in Model.DepositRequests)
+					{
+						<tr>
+							<td class="amount-col">$@request.Amount.ToString("F2")</td>
+							<td>
+								@request.Status
+								@if (request.Status == "Rejected" && !string.IsNullOrWhiteSpace(request.RejectionReason))
+								{
+									<span class="status-note">@request.RejectionReason</span>
+								}
+							</td>
+							<td>@request.RequestedAt.ToString("yyyy-MM-dd")</td>
+						</tr>
+					}
+				</table>
+			}
+			@if (depositsTotalPages > 1)
+			{
+				<div class="pagination">
+					@if (depositsPage > 1)
+					{
+						<a href="/Dashboard/Index?depositsPage=@(depositsPage - 1)&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-requests">Previous</a>
+					}
+					<span>Page @depositsPage of @depositsTotalPages</span>
+					@if (depositsPage < depositsTotalPages)
+					{
+						<a href="/Dashboard/Index?depositsPage=@(depositsPage + 1)&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-requests">Next</a>
+					}
+				</div>
+			}
+
+			<h3 class="subsection-title">Withdrawal Requests</h3>
+			<div class="section-page-size">
+				<label for="withdrawalsPageSize">Rows</label>
+				<select id="withdrawalsPageSize" onchange="window.location.href='/Dashboard/Index?depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=1&withdrawalsPageSize=' + this.value + '&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-requests'">
+					<option value="5" selected="@(withdrawalsPageSize == 5)">5</option>
+					<option value="10" selected="@(withdrawalsPageSize == 10)">10</option>
+					<option value="20" selected="@(withdrawalsPageSize == 20)">20</option>
+					<option value="50" selected="@(withdrawalsPageSize == 50)">50</option>
+				</select>
+			</div>
+			@if (!Model.WithdrawalRequests.Any())
+			{
+				<p class="empty-state">No withdrawal requests yet.</p>
+			}
+			else
+			{
+				<table>
+					<tr>
+						<th>Amount</th>
+						<th>Status</th>
+						<th>Requested</th>
+						<th>Action</th>
+					</tr>
+					@foreach (var request in Model.WithdrawalRequests)
+					{
+						<tr>
+							<td class="amount-col">$@request.Amount.ToString("F2")</td>
+							<td>
+								@request.Status
+								@if (request.Status == "Rejected" && !string.IsNullOrWhiteSpace(request.RejectionReason))
+								{
+									<span class="status-note">@request.RejectionReason</span>
+								}
+							</td>
+							<td>@request.RequestedAt.ToString("yyyy-MM-dd")</td>
+							<td>
+								@if (request.Status == "Approved")
+								{
+									@if (request.ApprovalCodeRevealed && !string.IsNullOrWhiteSpace(request.ApprovalCode))
+									{
+										<div class="approval-code">
+											<span>Approval code</span>
+											<strong>@request.ApprovalCode</strong>
+											<button type="button" class="copy-button" data-copy="@request.ApprovalCode">Copy code</button>
+											@if (request.ApprovalCodeRevealedAt.HasValue)
+											{
+												<span class="status-note">Revealed @request.ApprovalCodeRevealedAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+											}
+										</div>
+									}
+									<form method="post" action="/Dashboard/CompleteWithdrawal" class="approval-form">
+										<input type="hidden" name="requestId" value="@request.Id" />
+										<input type="text" name="approvalCode" placeholder="Enter approval code" />
+										<button type="submit">Complete</button>
+									</form>
+								}
+								else if (request.Status == "Pending")
+								{
+									<span class="status-muted">Awaiting approval</span>
+								}
+								else if (request.Status == "Processing")
+								{
+									<span class="status-muted">Processing</span>
+									<span class="status-note">Processing can take between 5 minutes and 24 hours.</span>
+									@if (request.ProcessingAt.HasValue)
+									{
+										<span class="status-note">Started @request.ProcessingAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+									}
+								}
+								else
+								{
+									<span class="status-muted">@request.Status</span>
+								}
+							</td>
+						</tr>
+					}
+				</table>
+			}
+			@if (withdrawalsTotalPages > 1)
+			{
+				<div class="pagination">
+					@if (withdrawalsPage > 1)
+					{
+						<a href="/Dashboard/Index?depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@(withdrawalsPage - 1)&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-requests">Previous</a>
+					}
+					<span>Page @withdrawalsPage of @withdrawalsTotalPages</span>
+					@if (withdrawalsPage < withdrawalsTotalPages)
+					{
+						<a href="/Dashboard/Index?depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@(withdrawalsPage + 1)&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-requests">Next</a>
+					}
+				</div>
+			}
+		</div>
+
+		<div class="section-card collapse-panel" id="panel-transfers">
+			<div class="section-headline">
+				<h2>Transfers</h2>
+				<span>Peer-to-peer with admin approval</span>
+			</div>
+			<div class="admin-card compact-card">
+				<form method="post" action="/Dashboard/SubmitTransfer" class="approval-form">
+					<input type="text" name="recipientUsername" placeholder="Recipient username" />
+					<input type="number" name="amount" min="100" max="300000" step="0.01" placeholder="Amount" />
+					<input type="text" name="note" maxlength="140" placeholder="Note (optional)" />
+					<button type="submit">Submit transfer</button>
+				</form>
+				<span class="form-hint">Minimum $100, maximum $300,000. Fee: 0.1%.</span>
+			</div>
+
+			<h3 class="subsection-title">Sent Transfers</h3>
+			<div class="section-page-size">
+				<label for="sentTransfersPageSize">Rows</label>
+				<select id="sentTransfersPageSize" onchange="window.location.href='/Dashboard/Index?depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=1&sentTransfersPageSize=' + this.value + '&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-transfers'">
+					<option value="5" selected="@(sentTransfersPageSize == 5)">5</option>
+					<option value="10" selected="@(sentTransfersPageSize == 10)">10</option>
+					<option value="20" selected="@(sentTransfersPageSize == 20)">20</option>
+					<option value="50" selected="@(sentTransfersPageSize == 50)">50</option>
+				</select>
+			</div>
+			@if (!Model.SentTransfers.Any())
+			{
+				<p class="empty-state">No sent transfers yet.</p>
+			}
+			else
+			{
+				<table>
+					<tr>
+						<th>Transfer ID</th>
+						<th>Recipient</th>
+						<th class="amount-col">Amount</th>
+						<th>Fee</th>
+						<th>Total Debit</th>
+						<th>Note</th>
+						<th>Status</th>
+						<th>Requested</th>
+					</tr>
+					@foreach (var request in Model.SentTransfers)
+					{
+						<tr>
+							<td>@request.TransferCode</td>
+							<td>@request.RecipientUsername</td>
+							<td class="amount-col">$@request.Amount.ToString("F2")</td>
+							<td>$@request.FeeAmount.ToString("F2")</td>
+							<td>$@((request.Amount + request.FeeAmount).ToString("F2"))</td>
+							<td>@(string.IsNullOrWhiteSpace(request.Note) ? "-" : request.Note)</td>
+							<td>
+								@request.Status
+								@if (request.Status == "Pending")
+								{
+									<span class="status-note">
+										@(request.RecipientConfirmed ? "Recipient confirmed" : "Awaiting recipient confirmation")
+									</span>
+								}
+								@if (request.Status == "Rejected" && !string.IsNullOrWhiteSpace(request.RejectionReason))
+								{
+									<span class="status-note">@request.RejectionReason</span>
+								}
+							</td>
+							<td>@request.RequestedAt.ToString("yyyy-MM-dd")</td>
+						</tr>
+					}
+				</table>
+			}
+			@if (sentTransfersTotalPages > 1)
+			{
+				<div class="pagination">
+					@if (sentTransfersPage > 1)
+					{
+						<a href="/Dashboard/Index?depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@(sentTransfersPage - 1)&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-transfers">Previous</a>
+					}
+					<span>Page @sentTransfersPage of @sentTransfersTotalPages</span>
+					@if (sentTransfersPage < sentTransfersTotalPages)
+					{
+						<a href="/Dashboard/Index?depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@(sentTransfersPage + 1)&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-transfers">Next</a>
+					}
+				</div>
+			}
+
+			<h3 class="subsection-title">Received Transfers</h3>
+			<div class="section-page-size">
+				<label for="receivedTransfersPageSize">Rows</label>
+				<select id="receivedTransfersPageSize" onchange="window.location.href='/Dashboard/Index?depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=1&receivedTransfersPageSize=' + this.value + '&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-transfers'">
+					<option value="5" selected="@(receivedTransfersPageSize == 5)">5</option>
+					<option value="10" selected="@(receivedTransfersPageSize == 10)">10</option>
+					<option value="20" selected="@(receivedTransfersPageSize == 20)">20</option>
+					<option value="50" selected="@(receivedTransfersPageSize == 50)">50</option>
+				</select>
+			</div>
+			@if (!Model.ReceivedTransfers.Any())
+			{
+				<p class="empty-state">No received transfers yet.</p>
+			}
+			else
+			{
+				<table>
+					<tr>
+						<th>Transfer ID</th>
+						<th>Sender</th>
+						<th class="amount-col">Amount</th>
+						<th>Note</th>
+						<th>Status</th>
+						<th>Requested</th>
+					</tr>
+					@foreach (var request in Model.ReceivedTransfers)
+					{
+						<tr>
+							<td>@request.TransferCode</td>
+							<td>@request.SenderUsername</td>
+							<td class="amount-col">$@request.Amount.ToString("F2")</td>
+							<td>@(string.IsNullOrWhiteSpace(request.Note) ? "-" : request.Note)</td>
+							<td>
+								@request.Status
+								@if (request.Status == "Pending" && !request.RecipientConfirmed)
+								{
+									<form method="post" action="/Dashboard/ConfirmTransferReceipt" class="approval-form">
+										<input type="hidden" name="requestId" value="@request.Id" />
+										<button type="submit">Confirm receipt</button>
+									</form>
+								}
+								else if (request.Status == "Pending" && request.RecipientConfirmed)
+								{
+									<span class="status-note">Awaiting admin approval</span>
+								}
+							</td>
+							<td>@request.RequestedAt.ToString("yyyy-MM-dd")</td>
+						</tr>
+					}
+				</table>
+			}
+			@if (receivedTransfersTotalPages > 1)
+			{
+				<div class="pagination">
+					@if (receivedTransfersPage > 1)
+					{
+						<a href="/Dashboard/Index?depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@(receivedTransfersPage - 1)&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-transfers">Previous</a>
+					}
+					<span>Page @receivedTransfersPage of @receivedTransfersTotalPages</span>
+					@if (receivedTransfersPage < receivedTransfersTotalPages)
+					{
+						<a href="/Dashboard/Index?depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@(receivedTransfersPage + 1)&receivedTransfersPageSize=@receivedTransfersPageSize&page=@Model.TransactionPage&transactionsPageSize=@transactionsPageSize#panel-transfers">Next</a>
+					}
+				</div>
+			}
+		</div>
+	</div>
+
+	<div id="transactionsSection" class="transactions-section is-collapsed">
+		@{
+			var hasWithdrawalTransactions = Model.Transactions.Any(t => t.Type == "Withdrawal");
+		}
+		<h2 class="section-title">Transaction History</h2>
+		<div class="section-page-size">
+			<label for="transactionsPageSize">Rows</label>
+			<select id="transactionsPageSize" onchange="window.location.href='/Dashboard/Index?page=1&transactionsPageSize=' + this.value + '&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize#transactionsSection'">
+				<option value="5" selected="@(transactionsPageSize == 5)">5</option>
+				<option value="10" selected="@(transactionsPageSize == 10)">10</option>
+				<option value="20" selected="@(transactionsPageSize == 20)">20</option>
+				<option value="50" selected="@(transactionsPageSize == 50)">50</option>
+			</select>
+		</div>
+		<table>
+			<tr>
+				<th>Type</th>
+				<th class="amount-col">Amount</th>
+				@if (hasWithdrawalTransactions)
+				{
+					<th>Wallet</th>
+				}
+				<th>Date</th>
+			</tr>
+
+			@foreach (var tx in Model.Transactions)
+			{
+				<tr>
+					<td>@tx.Type</td>
+					<td class="amount-col">$@tx.Amount.ToString("F2")</td>
+					@if (hasWithdrawalTransactions)
+					{
+						<td>
+							@if (tx.Type == "Withdrawal")
+							{
+								@tx.WalletAddress
+							}
+						</td>
+					}
+					<td>@tx.CreatedAt</td>
+				</tr>
+			}
+		</table>
+
+		@if (Model.TransactionTotalPages > 1)
+		{
+			<div class="pagination">
+				@if (Model.TransactionPage > 1)
+				{
+					<a href="/Dashboard/Index?page=@(Model.TransactionPage - 1)&transactionsPageSize=@transactionsPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize#transactionsSection">Previous</a>
+				}
+
+				<span>Page @Model.TransactionPage of @Model.TransactionTotalPages</span>
+
+				@if (Model.TransactionPage < Model.TransactionTotalPages)
+				{
+					<a href="/Dashboard/Index?page=@(Model.TransactionPage + 1)&transactionsPageSize=@transactionsPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize&sentTransfersPage=@sentTransfersPage&sentTransfersPageSize=@sentTransfersPageSize&receivedTransfersPage=@receivedTransfersPage&receivedTransfersPageSize=@receivedTransfersPageSize#transactionsSection">Next</a>
+				}
+			</div>
+		}
+	</div>
+
+	<hr />
+
+	<h2 class="section-title">Performance Charts</h2>
+
+	<div class="charts-row">
+		<div class="chart-card">
+			<h3>Investment Growth</h3>
+			<canvas id="investmentChart"></canvas>
+		</div>
+
+		<div class="chart-card">
+			<h3>Balance Over Time</h3>
+			<canvas id="balanceChart"></canvas>
+		</div>
+	</div>
+
+</div>
+
+@section Scripts {
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+	<script>
+		const connection = new signalR.HubConnectionBuilder()
+			.withUrl("/dashboardHub")
+			.build();
+
+		connection.on(
+			"ReceiveBalanceUpdate",
+			function (username, balance, dailyReturn, tier) {
+				const balanceElement = document.getElementById("balanceValue");
+				const dailyReturnElement = document.getElementById("dailyReturnValue");
+				const tierElement = document.getElementById("tierValue");
+
+				if (balanceElement) {
+					balanceElement.innerText = `$${balance}`;
+				}
+				if (dailyReturnElement) {
+					dailyReturnElement.innerText = `$${dailyReturn}`;
+				}
+				if (tierElement) {
+					tierElement.innerText = tier;
+				}
+			}
+		);
+
+		connection.start().catch(err => console.error(err.toString()));
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script>
+
+	const investmentCanvas = document.getElementById('investmentChart');
+	const investmentCtx = investmentCanvas.getContext('2d');
+	const investmentGradient = investmentCtx.createLinearGradient(0, 0, 0, 300);
+	investmentGradient.addColorStop(0, 'rgba(37, 99, 235, 0.35)');
+	investmentGradient.addColorStop(1, 'rgba(37, 99, 235, 0.05)');
+
+	const axisColor = '#475569';
+	const gridColor = 'rgba(148, 163, 184, 0.35)';
+
+	const investmentChart = new Chart(investmentCtx, {
+		type: 'line',
+
+		data: {
+			labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartLabels)),
+
+			datasets: [{
+				label: 'Investments ($)',
+
+				data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartData)),
+
+				borderColor: getComputedStyle(document.body).getPropertyValue('--primary').trim(),
+				backgroundColor: investmentGradient,
+				pointBackgroundColor: getComputedStyle(document.body).getPropertyValue('--primary').trim(),
+				pointBorderColor: getComputedStyle(document.body).getPropertyValue('--primary').trim(),
+				pointRadius: 3,
+				pointHoverRadius: 6,
+				pointHoverBackgroundColor: getComputedStyle(document.body).getPropertyValue('--primary-dark').trim(),
+				pointHoverBorderColor: getComputedStyle(document.body).getPropertyValue('--primary-dark').trim(),
+				fill: true,
+				borderWidth: 3,
+				tension: 0.3
+			}]
+		},
+
+		options: {
+			responsive: true,
+			animation: {
+				duration: 900,
+				easing: 'easeOutQuart'
+			},
+			interaction: {
+				mode: 'nearest',
+				intersect: false
+			},
+			plugins: {
+				legend: {
+					display: true,
+					position: 'top',
+					labels: {
+						color: axisColor
+					}
+				},
+				tooltip: {
+					callbacks: {
+						label: function(context) {
+							return `$${context.parsed.y}`;
+						}
+					}
+				}
+			},
+			scales: {
+				x: {
+					title: {
+						display: true,
+						text: 'Date',
+						color: axisColor
+					},
+					ticks: {
+						maxTicksLimit: 8,
+						color: axisColor
+					},
+					grid: {
+						color: gridColor
+					}
+				},
+				y: {
+					title: {
+						display: true,
+						text: 'Amount ($)',
+						color: axisColor
+					},
+					ticks: {
+						callback: function(value) {
+							return `$${value}`;
+						},
+						color: axisColor
+					},
+					grid: {
+						color: gridColor
+					}
+				}
+			}
+		}
+	});
+
+	const balanceCanvas = document.getElementById('balanceChart');
+	const balanceCtx = balanceCanvas.getContext('2d');
+	const balanceGradient = balanceCtx.createLinearGradient(0, 0, 0, 300);
+	balanceGradient.addColorStop(0, 'rgba(22, 163, 74, 0.35)');
+	balanceGradient.addColorStop(1, 'rgba(22, 163, 74, 0.05)');
+
+	const balanceChart = new Chart(balanceCtx, {
+		type: 'line',
+
+		data: {
+			labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartLabels)),
+
+			datasets: [{
+				label: 'Balance ($)',
+
+				data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BalanceData)),
+
+				borderColor: getComputedStyle(document.body).getPropertyValue('--success').trim(),
+				backgroundColor: balanceGradient,
+				pointBackgroundColor: getComputedStyle(document.body).getPropertyValue('--success').trim(),
+				pointBorderColor: getComputedStyle(document.body).getPropertyValue('--success').trim(),
+				pointRadius: 3,
+				pointHoverRadius: 6,
+				pointHoverBackgroundColor: getComputedStyle(document.body).getPropertyValue('--success-dark').trim(),
+				pointHoverBorderColor: getComputedStyle(document.body).getPropertyValue('--success-dark').trim(),
+				fill: true,
+				borderWidth: 3,
+				tension: 0.3
+			}]
+		},
+
+		options: {
+			responsive: true,
+			animation: {
+				duration: 900,
+				easing: 'easeOutQuart'
+			},
+			interaction: {
+				mode: 'nearest',
+				intersect: false
+			},
+			plugins: {
+				legend: {
+					display: true,
+					position: 'top',
+					labels: {
+						color: axisColor
+					}
+				},
+				tooltip: {
+					callbacks: {
+						label: function(context) {
+							return `$${context.parsed.y}`;
+						}
+					}
+				}
+			},
+			scales: {
+				x: {
+					title: {
+						display: true,
+						text: 'Date',
+						color: axisColor
+					},
+					ticks: {
+						maxTicksLimit: 8,
+						color: axisColor
+					},
+					grid: {
+						color: gridColor
+					}
+				},
+				y: {
+					title: {
+						display: true,
+						text: 'Balance ($)',
+						color: axisColor
+					},
+					ticks: {
+						callback: function(value) {
+							return `$${value}`;
+						},
+						color: axisColor
+					},
+					grid: {
+						color: gridColor
+					}
+				}
+			}
+		}
+	});
+	</script>
+
+	<script>
+	const transactionsToggle = document.getElementById('transactionsToggle');
+	const transactionsSection = document.getElementById('transactionsSection');
+
+	transactionsToggle.addEventListener('click', () => {
+		const isCollapsed = transactionsSection.classList.toggle('is-collapsed');
+		transactionsToggle.textContent = isCollapsed ? 'Show transactions' : 'Hide transactions';
+	});
+	</script>
+
+	<script>
+	const depositAmount = document.getElementById('depositAmount');
+	const depositAddress = document.getElementById('depositAddress');
+	const depositAddressValue = depositAddress?.dataset.address;
+
+	if (depositAmount && depositAddress) {
+		depositAmount.addEventListener('input', () => {
+			const amountValue = parseFloat(depositAmount.value || '0');
+			if (amountValue >= 1000 && depositAddressValue) {
+				depositAddress.classList.add('is-visible');
+			} else {
+				depositAddress.classList.remove('is-visible');
+			}
+		});
+	}
+
+	const copyButtons = document.querySelectorAll('.copy-button');
+	copyButtons.forEach((button) => {
+		button.addEventListener('click', async () => {
+			const value = button.getAttribute('data-copy');
+			if (!value) return;
+			const originalLabel = button.textContent;
+			try {
+				await navigator.clipboard.writeText(value);
+				button.textContent = 'Copied';
+				setTimeout(() => {
+					button.textContent = originalLabel;
+				}, 1500);
+			} catch {
+				button.textContent = 'Copy failed';
+				setTimeout(() => {
+					button.textContent = originalLabel;
+				}, 1500);
+			}
+		});
+	});
+	</script>
+
+	<script>
+	const qaButtons = document.querySelectorAll('.qa-button');
+	const qaPanels = document.querySelectorAll('.collapse-panel');
+	const setActivePanel = (targetId) => {
+		qaButtons.forEach((btn) => {
+			const isActive = btn.getAttribute('data-target') === targetId;
+			btn.classList.toggle('is-active', isActive);
+			btn.setAttribute('aria-expanded', isActive.toString());
+		});
+		qaPanels.forEach((panel) => {
+			panel.classList.toggle('is-open', panel.id === targetId);
+		});
+		localStorage.setItem('dashboard-active-panel', targetId);
+	};
+
+	const savedPanel = localStorage.getItem('dashboard-active-panel') || 'panel-deposit';
+	setActivePanel(savedPanel);
+
+	qaButtons.forEach((button) => {
+		button.addEventListener('click', () => {
+			const targetId = button.getAttribute('data-target');
+			setActivePanel(targetId);
+		});
+	});
+	</script>
+}

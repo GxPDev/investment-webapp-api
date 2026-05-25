@@ -1,0 +1,713 @@
+@model List<InvestmentWebApp.Models.AppUser>
+
+@{
+    var audit = ViewBag.DailyProfitAudit as IEnumerable<InvestmentWebApp.Models.Transaction> ??
+        Enumerable.Empty<InvestmentWebApp.Models.Transaction>();
+    var pageNumber = (int)(ViewBag.AuditPage ?? 1);
+    var totalPages = (int)(ViewBag.AuditTotalPages ?? 1);
+    var pageSize = (int)(ViewBag.AuditPageSize ?? 10);
+    var startDate = (DateTime?)ViewBag.AuditStartDate;
+    var endDate = (DateTime?)ViewBag.AuditEndDate;
+    var usersPage = (int)(ViewBag.UsersPage ?? 1);
+    var usersTotalPages = (int)(ViewBag.UsersTotalPages ?? 1);
+    var usersPageSize = (int)(ViewBag.UsersPageSize ?? 10);
+    var depositsPage = (int)(ViewBag.DepositsPage ?? 1);
+    var depositsTotalPages = (int)(ViewBag.DepositsTotalPages ?? 1);
+    var depositsPageSize = (int)(ViewBag.DepositsPageSize ?? 10);
+    var transfersPage = (int)(ViewBag.TransfersPage ?? 1);
+    var transfersTotalPages = (int)(ViewBag.TransfersTotalPages ?? 1);
+    var transfersPageSize = (int)(ViewBag.TransfersPageSize ?? 10);
+    var withdrawalsPage = (int)(ViewBag.WithdrawalsPage ?? 1);
+    var withdrawalsTotalPages = (int)(ViewBag.WithdrawalsTotalPages ?? 1);
+    var withdrawalsPageSize = (int)(ViewBag.WithdrawalsPageSize ?? 10);
+}
+
+<div class="admin-shell">
+    <header class="admin-hero">
+        <div>
+            <span class="admin-kicker">Admin Console</span>
+            <h1>Operations Overview</h1>
+            <p class="subtitle">Monitor users, balances, and daily profit audits in one place.</p>
+        </div>
+        <div class="admin-hero-actions">
+            <a class="button ghost" href="/Dashboard/Index">Open Dashboard</a>
+            <a class="button" href="/Admin/ExportDailyProfitCsv?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))">Export Audit CSV</a>
+        </div>
+    </header>
+
+    <nav class="admin-subnav">
+        <a href="#admin-overview">Overview</a>
+        <a href="#admin-users">Users</a>
+        <a href="#admin-deposits">Deposits</a>
+        <a href="#admin-transfers">Transfers</a>
+        <a href="#admin-withdrawals">Withdrawals</a>
+        <a href="#admin-audit">Profit Audit</a>
+        <a href="#admin-actions">Admin Actions</a>
+    </nav>
+
+    <section class="admin-section" id="admin-overview">
+        <div class="admin-stat-grid">
+            <div class="admin-stat">
+                <span>Total Users</span>
+                <strong>@ViewBag.TotalUsers</strong>
+            </div>
+            <div class="admin-stat">
+                <span>Total Platform Balance</span>
+                <strong>$@(((decimal)ViewBag.TotalBalance).ToString("F2"))</strong>
+            </div>
+            <div class="admin-stat">
+                <span>Total Investments</span>
+                <strong>£@(((decimal)ViewBag.TotalInvestments).ToString("F2"))</strong>
+            </div>
+            <div class="admin-stat">
+                <span>Total Withdrawals</span>
+                <strong>£@(((decimal)ViewBag.TotalWithdrawals).ToString("F2"))</strong>
+            </div>
+            <div class="admin-stat">
+                <span>Daily Profit Payouts</span>
+                <strong>£@(((decimal)ViewBag.TotalProfits).ToString("F2"))</strong>
+            </div>
+        </div>
+
+    </section>
+
+    <section class="admin-section" id="admin-users">
+        <div class="section-head">
+            <div>
+                <h2>Users</h2>
+                <p>Active portfolio holders and tier assignments.</p>
+            </div>
+            <div class="admin-search">
+                <input type="text" id="userSearch" placeholder="Search username or email" />
+            </div>
+        </div>
+        <div class="admin-page-size">
+            <label for="usersPageSize">Rows</label>
+            <select id="usersPageSize" onchange="window.location.href='/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=1&usersPageSize=' + this.value + '&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&transfersPage=@transfersPage&transfersPageSize=@transfersPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize#admin-users'">
+                <option value="5" selected="@(usersPageSize == 5)">5</option>
+                <option value="10" selected="@(usersPageSize == 10)">10</option>
+                <option value="20" selected="@(usersPageSize == 20)">20</option>
+                <option value="50" selected="@(usersPageSize == 50)">50</option>
+            </select>
+        </div>
+        <div class="admin-card">
+            <h3 class="subsection-title">Deposit Addresses</h3>
+            <p class="subsection-note">Update the USDT deposit address per user.</p>
+            <div class="table-card admin-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Deposit Address</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td>@user.Username</td>
+                                <td>@(string.IsNullOrWhiteSpace(user.DepositAddress) ? "Not set" : user.DepositAddress)</td>
+                                <td>
+                                    <form method="post" action="/Admin/UpdateDepositAddress" class="inline-form">
+                                        <input type="hidden" name="username" value="@user.Username" />
+                                        <input type="text" name="depositAddress" placeholder="USDT address" />
+                                        <button type="submit">Save</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="table-card admin-table users-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Tier</th>
+                        <th class="amount-col">Balance</th>
+                        <th>Update Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.Username</td>
+                            <td>@user.Email</td>
+                            <td>@user.Tier</td>
+                            <td class="amount-col">$@user.Balance.ToString("F2")</td>
+                            <td>
+                                <form method="post" action="/Admin/UpdateUserBalance" class="inline-form">
+                                    <input type="hidden" name="username" value="@user.Username" />
+                                    <input type="number" name="balance" step="0.01" min="0" placeholder="New balance" />
+                                    <button type="submit">Update</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (usersTotalPages > 1)
+        {
+            <div class="pagination">
+                @if (usersPage > 1)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@(usersPage - 1)&usersPageSize=@usersPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&transfersPage=@transfersPage&transfersPageSize=@transfersPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize#admin-users">Previous</a>
+                }
+
+                <span>Page @usersPage of @usersTotalPages</span>
+
+                @if (usersPage < usersTotalPages)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@(usersPage + 1)&usersPageSize=@usersPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&transfersPage=@transfersPage&transfersPageSize=@transfersPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize#admin-users">Next</a>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="admin-section" id="admin-deposits">
+        <div class="section-head">
+            <div>
+                <h2>Deposit/Withdrawal Requests</h2>
+                <p>Approve requests and share the generated code with the user.</p>
+            </div>
+        </div>
+
+        @{
+            var withdrawalRequests = ViewBag.WithdrawalRequests as IEnumerable<InvestmentWebApp.Models.WithdrawalRequest> ??
+                Enumerable.Empty<InvestmentWebApp.Models.WithdrawalRequest>();
+            var depositRequests = ViewBag.DepositRequests as IEnumerable<InvestmentWebApp.Models.DepositRequest> ??
+                Enumerable.Empty<InvestmentWebApp.Models.DepositRequest>();
+            var transferRequests = ViewBag.TransferRequests as IEnumerable<InvestmentWebApp.Models.TransferRequest> ??
+                Enumerable.Empty<InvestmentWebApp.Models.TransferRequest>();
+        }
+
+        <h3 class="subsection-title">Deposit Requests</h3>
+        <div class="admin-page-size">
+            <label for="depositsPageSize">Rows</label>
+            <select id="depositsPageSize" onchange="window.location.href='/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@usersPage&usersPageSize=@usersPageSize&depositsPage=1&depositsPageSize=' + this.value + '&transfersPage=@transfersPage&transfersPageSize=@transfersPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize#admin-deposits'">
+                <option value="5" selected="@(depositsPageSize == 5)">5</option>
+                <option value="10" selected="@(depositsPageSize == 10)">10</option>
+                <option value="20" selected="@(depositsPageSize == 20)">20</option>
+                <option value="50" selected="@(depositsPageSize == 50)">50</option>
+            </select>
+        </div>
+        @if (!depositRequests.Any())
+        {
+            <p class="empty-state">No deposit requests yet.</p>
+        }
+        else
+        {
+            <div class="table-card admin-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th class="amount-col">Amount</th>
+                            <th>Status</th>
+                            <th>Requested</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var request in depositRequests)
+                        {
+                            <tr>
+                                <td>@request.Username</td>
+                                <td class="amount-col">$@request.Amount.ToString("F2")</td>
+                                <td>
+                                    @request.Status
+                                    @if (request.Status == "Rejected" && !string.IsNullOrWhiteSpace(request.RejectionReason))
+                                    {
+                                        <span class="status-note">@request.RejectionReason</span>
+                                    }
+                                </td>
+                                <td>@request.RequestedAt.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    @if (request.Status == "Pending")
+                                    {
+                                        <div class="inline-form">
+                                            <form method="post" action="/Admin/ApproveDeposit">
+                                                <input type="hidden" name="requestId" value="@request.Id" />
+                                                <button type="submit">Approve</button>
+                                            </form>
+                                            <form method="post" action="/Admin/RejectDeposit">
+                                                <input type="hidden" name="requestId" value="@request.Id" />
+                                                <input type="text" name="reason" placeholder="Rejection reason" />
+                                                <button type="submit" class="secondary">Reject</button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-muted">@request.Status</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (depositsTotalPages > 1)
+        {
+            <div class="pagination">
+                @if (depositsPage > 1)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@usersPage&usersPageSize=@usersPageSize&depositsPage=@(depositsPage - 1)&depositsPageSize=@depositsPageSize&transfersPage=@transfersPage&transfersPageSize=@transfersPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize#admin-deposits">Previous</a>
+                }
+
+                <span>Page @depositsPage of @depositsTotalPages</span>
+
+                @if (depositsPage < depositsTotalPages)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@usersPage&usersPageSize=@usersPageSize&depositsPage=@(depositsPage + 1)&depositsPageSize=@depositsPageSize&transfersPage=@transfersPage&transfersPageSize=@transfersPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize#admin-deposits">Next</a>
+                }
+            </div>
+        }
+
+        <h3 class="subsection-title" id="admin-transfers">Transfer Requests</h3>
+        <div class="admin-page-size">
+            <label for="transfersPageSize">Rows</label>
+            <select id="transfersPageSize" onchange="window.location.href='/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@usersPage&usersPageSize=@usersPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&transfersPage=1&transfersPageSize=' + this.value + '&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize#admin-transfers'">
+                <option value="5" selected="@(transfersPageSize == 5)">5</option>
+                <option value="10" selected="@(transfersPageSize == 10)">10</option>
+                <option value="20" selected="@(transfersPageSize == 20)">20</option>
+                <option value="50" selected="@(transfersPageSize == 50)">50</option>
+            </select>
+        </div>
+        @if (!transferRequests.Any())
+        {
+            <p class="empty-state">No transfer requests yet.</p>
+        }
+        else
+        {
+            <div class="table-card admin-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Transfer ID</th>
+                            <th>Sender</th>
+                            <th>Recipient Confirm</th>
+                            <th class="amount-col">Amount</th>
+                            <th>Fee</th>
+                            <th>Note</th>
+                            <th>Status</th>
+                            <th>Recipient</th>
+                            <th>Requested</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var request in transferRequests)
+                        {
+                            <tr>
+                                <td>@request.TransferCode</td>
+                                <td>@request.SenderUsername</td>
+                                <td>@request.RecipientUsername</td>
+                                <td class="amount-col">$@request.Amount.ToString("F2")</td>
+                                <td>$@request.FeeAmount.ToString("F2")</td>
+                                <td>@(string.IsNullOrWhiteSpace(request.Note) ? "-" : request.Note)</td>
+                                <td>
+                                    @request.Status
+                                    @if (request.Status == "Rejected" && !string.IsNullOrWhiteSpace(request.RejectionReason))
+                                    {
+                                        <span class="status-note">@request.RejectionReason</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (request.RecipientConfirmed)
+                                    {
+                                        <span class="status-muted">Confirmed</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-muted">Awaiting</span>
+                                    }
+                                </td>
+                                <td>@request.RequestedAt.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    @if (request.Status == "Pending")
+                                    {
+                                        <div class="inline-form">
+                                            <form method="post" action="/Admin/ApproveTransfer">
+                                                <input type="hidden" name="requestId" value="@request.Id" />
+                                                <button type="submit">Approve</button>
+                                            </form>
+                                            <form method="post" action="/Admin/RejectTransfer">
+                                                <input type="hidden" name="requestId" value="@request.Id" />
+                                                <input type="text" name="reason" placeholder="Rejection reason" />
+                                                <button type="submit" class="secondary">Reject</button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-muted">@request.Status</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (transfersTotalPages > 1)
+        {
+            <div class="pagination">
+                @if (transfersPage > 1)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@usersPage&usersPageSize=@usersPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&transfersPage=@(transfersPage - 1)&transfersPageSize=@transfersPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize#admin-transfers">Previous</a>
+                }
+
+                <span>Page @transfersPage of @transfersTotalPages</span>
+
+                @if (transfersPage < transfersTotalPages)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@usersPage&usersPageSize=@usersPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&transfersPage=@(transfersPage + 1)&transfersPageSize=@transfersPageSize&withdrawalsPage=@withdrawalsPage&withdrawalsPageSize=@withdrawalsPageSize#admin-transfers">Next</a>
+                }
+            </div>
+        }
+
+        <h3 class="subsection-title" id="admin-withdrawals">Withdrawal Requests</h3>
+        <div class="admin-page-size">
+            <label for="withdrawalsPageSize">Rows</label>
+            <select id="withdrawalsPageSize" onchange="window.location.href='/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@usersPage&usersPageSize=@usersPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&transfersPage=@transfersPage&transfersPageSize=@transfersPageSize&withdrawalsPage=1&withdrawalsPageSize=' + this.value + '#admin-withdrawals'">
+                <option value="5" selected="@(withdrawalsPageSize == 5)">5</option>
+                <option value="10" selected="@(withdrawalsPageSize == 10)">10</option>
+                <option value="20" selected="@(withdrawalsPageSize == 20)">20</option>
+                <option value="50" selected="@(withdrawalsPageSize == 50)">50</option>
+            </select>
+        </div>
+        @if (!withdrawalRequests.Any())
+        {
+            <p class="empty-state">No withdrawal requests yet.</p>
+        }
+        else
+        {
+            <div class="table-card admin-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th class="amount-col">Amount</th>
+                            <th>Wallet</th>
+                            <th>Status</th>
+                            <th>Code</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var request in withdrawalRequests)
+                        {
+                            <tr>
+                                <td>@request.Username</td>
+                                <td class="amount-col">$@request.Amount.ToString("F2")</td>
+                                <td>@request.WalletAddress</td>
+                                <td>
+                                    @request.Status
+                                    @if (request.Status == "Processing" && request.ProcessingAt.HasValue)
+                                    {
+                                        <span class="status-note">Started @request.ProcessingAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                                        <span class="status-note processing-age" data-start="@request.ProcessingAt.Value.ToString("O")">Age: --</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (string.IsNullOrWhiteSpace(request.ApprovalCode))
+                                    {
+                                        <span class="status-muted">-</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="code-cell">
+                                            <span class="code-value">@request.ApprovalCode</span>
+                                            <button type="button" class="copy-button admin-copy" data-copy="@request.ApprovalCode">Copy code</button>
+                                        </div>
+                                        <span class="status-note">
+                                            @((request.ApprovalCodeRevealed) ? "Visible to user" : "Hidden from user")
+                                            @if (request.ApprovalCodeRevealedAt.HasValue)
+                                            {
+                                                <span> · Revealed @request.ApprovalCodeRevealedAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                                            }
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (request.Status == "Pending")
+                                    {
+                                        <div class="inline-form">
+                                            <form method="post" action="/Admin/ApproveWithdrawal">
+                                                <input type="hidden" name="requestId" value="@request.Id" />
+                                                <button type="submit">Approve</button>
+                                            </form>
+                                            <form method="post" action="/Admin/RejectWithdrawal">
+                                                <input type="hidden" name="requestId" value="@request.Id" />
+                                                <input type="text" name="reason" placeholder="Rejection reason" />
+                                                <button type="submit" class="secondary">Reject</button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else if (request.Status == "Approved")
+                                    {
+                                        <div class="inline-form">
+                                            <form method="post" action="/Admin/ToggleApprovalCodeVisibility">
+                                                <input type="hidden" name="requestId" value="@request.Id" />
+                                                <input type="hidden" name="reveal" value="@(request.ApprovalCodeRevealed ? "false" : "true")" />
+                                                <button type="submit" class="secondary">
+                                                    @(request.ApprovalCodeRevealed ? "Hide code" : "Reveal code")
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else if (request.Status == "Processing")
+                                    {
+                                        <div class="inline-form">
+                                            <form method="post" action="/Admin/FinalizeWithdrawal">
+                                                <input type="hidden" name="requestId" value="@request.Id" />
+                                                <button type="submit">Finalize</button>
+                                            </form>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-muted">@request.Status</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        @if (withdrawalsTotalPages > 1)
+        {
+            <div class="pagination">
+                @if (withdrawalsPage > 1)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@usersPage&usersPageSize=@usersPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&transfersPage=@transfersPage&transfersPageSize=@transfersPageSize&withdrawalsPage=@(withdrawalsPage - 1)&withdrawalsPageSize=@withdrawalsPageSize#admin-withdrawals">Previous</a>
+                }
+
+                <span>Page @withdrawalsPage of @withdrawalsTotalPages</span>
+
+                @if (withdrawalsPage < withdrawalsTotalPages)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@pageNumber&pageSize=@pageSize&usersPage=@usersPage&usersPageSize=@usersPageSize&depositsPage=@depositsPage&depositsPageSize=@depositsPageSize&transfersPage=@transfersPage&transfersPageSize=@transfersPageSize&withdrawalsPage=@(withdrawalsPage + 1)&withdrawalsPageSize=@withdrawalsPageSize#admin-withdrawals">Next</a>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="admin-section" id="admin-audit">
+        <div class="section-head">
+            <div>
+                <h2>Daily Profit Audit</h2>
+                <p>Filter and review daily profit distributions.</p>
+            </div>
+        </div>
+
+        <div class="admin-card admin-filters">
+            <form method="get" class="filter-form">
+                <div class="filter-group">
+                    <label for="startDate">Start</label>
+                    <input type="date" id="startDate" name="startDate" value="@(((DateTime?)ViewBag.AuditStartDate)?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">End</label>
+                    <input type="date" id="endDate" name="endDate" value="@(((DateTime?)ViewBag.AuditEndDate)?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="filter-group">
+                    <label for="pageSize">Page size</label>
+                    <select id="pageSize" name="pageSize">
+                        <option value="5" selected="@(pageSize == 5)">5</option>
+                        <option value="10" selected="@(pageSize == 10)">10</option>
+                        <option value="20" selected="@(pageSize == 20)">20</option>
+                        <option value="50" selected="@(pageSize == 50)">50</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit">Apply Filters</button>
+                    <a class="button ghost" href="/Admin">Reset</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="admin-metric-row">
+            <div class="admin-metric">
+                <span>Page Total</span>
+                <strong>$@(((decimal)ViewBag.AuditPageTotal).ToString("F2"))</strong>
+            </div>
+            <div class="admin-metric">
+                <span>Filtered Total</span>
+                <strong>$@(((decimal)ViewBag.AuditFilteredTotal).ToString("F2"))</strong>
+            </div>
+        </div>
+
+        @if (!audit.Any())
+        {
+            <p class="empty-state">No daily profit entries yet.</p>
+        }
+        else
+        {
+            <div class="table-card admin-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th class="amount-col">Amount</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in audit)
+                        {
+                            <tr>
+                                <td>@entry.Username</td>
+                                <td class="amount-col">$@entry.Amount.ToString("F2")</td>
+                                <td>@entry.CreatedAt</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (totalPages > 1)
+        {
+            <div class="pagination">
+                @if (pageNumber > 1)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@(pageNumber - 1)&pageSize=@pageSize">Previous</a>
+                }
+
+                <span>Page @pageNumber of @totalPages</span>
+
+                @if (pageNumber < totalPages)
+                {
+                    <a href="/Admin?startDate=@(startDate?.ToString("yyyy-MM-dd"))&endDate=@(endDate?.ToString("yyyy-MM-dd"))&page=@(pageNumber + 1)&pageSize=@pageSize">Next</a>
+                }
+            </div>
+        }
+        </section>
+
+        <section class="admin-section" id="admin-actions">
+            <div class="section-head">
+                <div>
+                    <h2>Admin Actions</h2>
+                    <p>Latest approval code visibility changes.</p>
+                </div>
+            </div>
+
+            @{
+                var adminLogs = ViewBag.AdminAuditLogs as IEnumerable<InvestmentWebApp.Models.AdminAuditLog> ??
+                    Enumerable.Empty<InvestmentWebApp.Models.AdminAuditLog>();
+            }
+
+            @if (!adminLogs.Any())
+            {
+                <p class="empty-state">No admin actions yet.</p>
+            }
+            else
+            {
+                <div class="table-card admin-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Target</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in adminLogs)
+                            {
+                                <tr>
+                                    <td>@log.Action</td>
+                                    <td>@log.Target</td>
+                                    <td>@log.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+
+@section Scripts {
+    <script>
+        const adminCopyButtons = document.querySelectorAll('.admin-copy');
+        adminCopyButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                const value = button.getAttribute('data-copy');
+                if (!value) {
+                    return;
+                }
+                try {
+                    await navigator.clipboard.writeText(value);
+                    const originalLabel = button.textContent;
+                    button.textContent = 'Copied';
+                    setTimeout(() => {
+                        button.textContent = originalLabel;
+                    }, 1400);
+                } catch (error) {
+                    const originalLabel = button.textContent;
+                    button.textContent = 'Copy failed';
+                    setTimeout(() => {
+                        button.textContent = originalLabel;
+                    }, 1600);
+                }
+            });
+        });
+    </script>
+
+    <script>
+        const userSearchInput = document.getElementById('userSearch');
+        const userRows = document.querySelectorAll('.users-table tbody tr');
+        if (userSearchInput) {
+            userSearchInput.addEventListener('input', () => {
+                const query = userSearchInput.value.trim().toLowerCase();
+                userRows.forEach((row) => {
+                    const text = row.textContent?.toLowerCase() || '';
+                    row.style.display = text.includes(query) ? '' : 'none';
+                });
+            });
+        }
+    </script>
+
+    <script>
+        const ageLabels = document.querySelectorAll('.processing-age');
+        const updateAges = () => {
+            const now = new Date();
+            ageLabels.forEach((label) => {
+                const startValue = label.getAttribute('data-start');
+                if (!startValue) {
+                    return;
+                }
+                const start = new Date(startValue);
+                const diffMs = now - start;
+                if (Number.isNaN(diffMs) || diffMs < 0) {
+                    label.textContent = 'Age: --';
+                    return;
+                }
+                const totalMinutes = Math.floor(diffMs / 60000);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                if (hours > 0) {
+                    label.textContent = `Age: ${hours}h ${minutes}m`;
+                } else {
+                    label.textContent = `Age: ${minutes}m`;
+                }
+            });
+        };
+
+        if (ageLabels.length) {
+            updateAges();
+            setInterval(updateAges, 60000);
+        }
+    </script>
+}

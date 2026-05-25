@@ -1,0 +1,191 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - VaultVest</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/InvestmentWebApp.styles.css" asp-append-version="true" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2563eb" />
+</head>
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var isHome = controller == "Home" && action == "Index";
+    var isDashboard = controller == "Dashboard";
+    var isAdmin = controller == "Admin";
+    var bodyClass = string.Join(" ", new[]
+    {
+        isHome ? "home-landing" : string.Empty,
+        isDashboard ? "dashboard-landing" : string.Empty,
+        isAdmin ? "admin-panel" : string.Empty
+    }.Where(c => !string.IsNullOrWhiteSpace(c)));
+}
+<body class="@bodyClass">
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">VaultVest</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        @if (Context.Session.GetString("user") == null)
+                        {
+                            <li class="nav-item">
+                                <button class="nav-link text-dark auth-trigger" type="button" data-bs-toggle="modal" data-bs-target="#loginModal">Login</button>
+                            </li>
+                        }
+                        else
+                        {
+                            if (Context.Session.GetString("role") == "Admin")
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" href="/Admin">Admin Panel</a>
+                                </li>
+                            }
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    @Context.Session.GetString("user")
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Dashboard" asp-action="Profile">Profile</a>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Auth" asp-action="Logout">Logout</a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 VaultVest - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a> - <a asp-area="" asp-controller="Home" asp-action="Terms">Terms of Use</a> - <a asp-area="" asp-controller="Home" asp-action="Docs">Docs</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(() => console.log('Service Worker Registered'))
+                .catch(err => console.warn('SW registration failed', err));
+        }
+    </script>
+
+    <div class="modal fade auth-modal" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="loginModalLabel">Sign in</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @if (TempData["LogoutMessage"] != null)
+                    {
+                        <div class="status-success">@TempData["LogoutMessage"]</div>
+                    }
+                    @if (TempData["LoginError"] != null)
+                    {
+                        <div class="status-error">@TempData["LoginError"]</div>
+                    }
+                    @if (TempData["RegisterSuccess"] != null)
+                    {
+                        <div class="status-success">@TempData["RegisterSuccess"]</div>
+                    }
+                    <form method="post" asp-controller="Auth" asp-action="Login">
+                        <input type="hidden" name="returnMode" value="modal" />
+                        <input name="username" placeholder="Username" required />
+                        <input name="password" type="password" placeholder="Password" required />
+                        <button type="submit">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade auth-modal" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registerModalLabel">Create account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @if (TempData["RegisterError"] != null)
+                    {
+                        <div class="status-error">@TempData["RegisterError"]</div>
+                    }
+                    <form method="post" asp-controller="Auth" asp-action="Register">
+                        <input type="hidden" name="returnMode" value="modal" />
+                        <input name="Username" placeholder="Username" required />
+                        <input name="Email" type="email" placeholder="Email address" required />
+                        <input name="Password" type="password" placeholder="Password" required />
+                        <span class="help">Minimum 7 characters.</span>
+                        <button type="submit">Register</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["RegisterSuccess"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalElement = document.getElementById('loginModal');
+                if (modalElement && window.bootstrap) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                }
+            });
+        </script>
+    }
+
+    @if (TempData["LoginError"] != null || TempData["LogoutMessage"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalElement = document.getElementById('loginModal');
+                if (modalElement && window.bootstrap) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                }
+            });
+        </script>
+    }
+
+    @if (TempData["RegisterError"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalElement = document.getElementById('registerModal');
+                if (modalElement && window.bootstrap) {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                }
+            });
+        </script>
+    }
+</body>
+</html>
