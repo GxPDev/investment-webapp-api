@@ -35,6 +35,11 @@ ASP.NET Core backend for an investment management platform featuring authenticat
 
 This project was built as part of a full-stack investment platform architecture to demonstrate backend system design, API development, and scalable ASP.NET application structure.
 
+## 🌐 Live Demo
+
+https://investment-webapp-api-3.onrender.com
+
+
 👨‍💻 Developer
 
 Godspower Egbetamah
