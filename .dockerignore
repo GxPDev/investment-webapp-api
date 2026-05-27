@@ -1,0 +1,15 @@
+.git
+.gitignore
+.venv
+
+bin/
+obj/
+
+README.md
+
+*.user
+*.suo
+*.cache
+
+**/.DS_Store
+**/node_modules/
